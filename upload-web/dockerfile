@@ -10,7 +10,7 @@ COPY package*.json ./
 RUN npm install
 
 # คัดลอกไฟล์ทั้งหมดในโปรเจคไปที่ container
-COPY . .
+# COPY . .
 
 # สร้างโปรเจค (ถ้าจำเป็น)
 # RUN npm run build

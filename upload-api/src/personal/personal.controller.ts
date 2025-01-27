@@ -8,9 +8,11 @@ export class PersonalController {
         private personalService: PersonalService,
         private minioService: MinioService,
     ) {}
+
     @Get('user')
     personalUser() {
-        this.minioService.test();
-        return this.personalService.personalUser(1)
+        return this.personalService.personalUser(2)
     }
+
+    
 }

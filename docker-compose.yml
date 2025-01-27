@@ -3,25 +3,32 @@ services:
     image: nginx
     container_name: nginx
     ports:
-      - "80:80"
+      - "8080:3090"
+      - "8090:5090"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - react
       - nestjs
+    networks:
+      - network_upload
 
   react:
     # image: node:22
     container_name: react
     build: ./upload-web
-    # working_dir: /app
-    # command: sh -c "npm install && npm run dev"
     ports:
-      - "3001:3003"
+      - "3000:3002"
     volumes:
       - ./upload-web:/app
-      - /app/node_modules
+      # - /app/node_modules
+      - react_module:/app/node_modules
+    environment:
+      - HOST=react
+      - PORT=3002
     stdin_open: true
+    networks:
+      - network_upload
 
   nestjs:
     image: node:22
@@ -29,32 +36,34 @@ services:
     working_dir: /app
     command: sh -c "npm install && npm run start:dev"
     ports:
-      - "5001:5001"
+      - "5000:5000"
     volumes:
       - ./upload-api:/app
-      - /app/node_modules
-      - uploadfile:/app/upload
+      - nestjs_module:/app/node_modules
     environment:
-      - PORT=5001
+      - PORT=5000
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
+    depends_on:
+      - db
     networks:
-      - network-upload
+      - network_upload
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio
     container_name: minio
-    command: server /data
+    working_dir: /app
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
+      - "9000:9000" # API Port
+      - "9090:9090" # Console Port
     environment:
       - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=password
+      - MINIO_ROOT_PASSWORD=admin123
+    volumes:
+      - ./minio_data:/app
+    command: server /app --console-address ":9090"
     networks:
-      - network-upload
+      - network_upload
 
   db:
     image: postgres:15
@@ -66,14 +75,29 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydatabase
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     networks:
-      - network-upload
+      - network_upload
+    
+  # pgadmin4:
+  #   image: dpage/pgadmin4
+  #   container_name: pgadmin4-2
+  #   # working_dir: /app
+  #   ports: 
+  #     - "5050:80"
+  #   # volumns:
+  #   #   - ./pgadmin4:/app
+  #   environment:
+  #     - PGADMIN_DEFAULT_EMAIL=user@domain.com
+  #     - PGADMIN_DEFAULT_PASSWORD=SuperSecret
+  #   networks:
+  #     - network_upload
 
 volumes:
-  uploadfile:
+  nestjs_module:
+  react_module:
   minio_data:
-  postgres_data:
+#   postgres_data:
 
 networks:
-  network-upload:
+  network_upload:
